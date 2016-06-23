@@ -1,234 +1,231 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <base target="_top">
-    <link href="https://ssl.gstatic.com/docs/script/css/add-ons.css" rel=
-    "stylesheet">
-    <script src=
-    "https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js">
+    <link href="https://ssl.gstatic.com/docs/script/css/add-ons.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js">
     </script>
     <style>
-    .bottom-button-update {
-        position: absolute;
-        top: 210px;
-        right: 288px;
-    }
-
-    .bottom-button-save-clear {
-        position: absolute;
-        top: 210px;
-        right: 150px;
-    }
-
-    .bottom-button-close {
-        position: absolute;
-        top: 210px;
-        right: 0px;
-    }
-
-    .boxes1 {
-    margin-top: -10px;
-        float: left;
-        width: 40%;
-    }
-    
+        .bottom-button-update {
+            position: absolute;
+            top: 210px;
+            right: 288px;
+        }
+        .bottom-button-save-clear {
+            position: absolute;
+            top: 210px;
+            right: 150px;
+        }
+        .bottom-button-close {
+            position: absolute;
+            top: 210px;
+            right: 0px;
+        }
+        .boxes1 {
+            margin-top: -10px;
+            float: left;
+            width: 40%;
+        }
         .boxes2 {
-        margin-top: -10px;
-        float: left;
-        width: 60%;
-    }
-
-    .box {
-        padding-bottom: 3px;
-    }
-    
-    .allbox {
-      display: none;
-      }
-
-    .remove {
-    font-size: 115%;
-    font-weight: bold;
-        color: #B7312C;
-    }
-
-    .preserve {
-    font-size: 115%;
-        font-weight: bold;
-        color: #006400;
-    }
-
-    .spinimage {
-        width: 20px;
-        padding-top: 70px;
-        padding-left: 150px;
-    }
-
+            margin-top: -10px;
+            float: left;
+            width: 60%;
+        }
+        .box {
+            padding-bottom: 3px;
+        }
+        .allbox {
+            display: none;
+        }
+        .remove {
+            font-size: 115%;
+            font-weight: bold;
+            color: #B7312C;
+        }
+        .preserve {
+            font-size: 115%;
+            font-weight: bold;
+            color: #006400;
+        }
+        .spinimage {
+            width: 20px;
+            padding-top: 70px;
+            padding-left: 150px;
+        }
     </style>
     <title></title>
 </head>
+
 <body>
     <div>
         <!-- Checkboxes -->
-        <div id="spinner"><img class="spinimage" src=
-        "http://preloaders.net/preloaders/712/Floating%20rays.gif">
+        <div id="spinner"><img class="spinimage" src="http://preloaders.net/preloaders/712/Floating%20rays.gif">
         </div>
-        <div id="allbox" class="allbox">
-        <div class="boxes1" id="boxes1">
-        <div>
-        <p class="preserve">Preserve</p>
+        <div class="allbox" id="allbox">
+            <div class="boxes1" id="boxes1">
+                <div>
+                    <p class="preserve">Preserve</p>
+                </div>
+                <div class="box">
+                    <input id="bold" type="checkbox"><strong>Bold</strong>
+                </div>
+                <div class="box">
+                    <input id="italic" type="checkbox"><em>Italics</em>
+                </div>
+                <div class="box">
+                    <input id="underline" type="checkbox"><span style="text-decoration: underline">Underlining</span>
+                </div>
+                <div class="box">
+                    <input id="strike" type="checkbox"><span style="text-decoration: line-through">Strikethrough</span>
+                </div>
+            </div>
+            <div class="boxes2" id="boxes2">
+                <div>
+                    <p class="remove">Remove</p>
+                </div>
+                <div class="box">
+                    <input id="links" type="checkbox">Links (removes <span style="text-decoration: underline">all</span> underlining)
+                </div>
+                <div class="box">
+                    <input id="line_breaks" type="checkbox">Line breaks
+                </div>
+                <div class="box">
+                    <input id="paras" type="checkbox">Paragraph breaks
+                </div>
+                <div class="box">
+                    <input id="multiple" type="checkbox">Multiple spaces
+                </div>
+                <div class="box">
+                    <input id="tabs" type="checkbox">Tabs
+                </div>
+            </div>
         </div>
-            <div class="box">
-                <input id="bold" type="checkbox"><strong>Bold</strong>
-            </div>
-            <div class="box">
-                <input id="italic" type="checkbox"><em>Italics</em>
-            </div>
-            <div class="box-underline">
-                <input id="underline" type="checkbox"><span style=
-                "text-decoration: underline">Underlining</span>
-            </div>
-        </div>
-        <div class="boxes2" id="boxes2">
-        <div>
-        <p class="remove">Remove</p>
-        </div>
-            <div class="box">
-                <input id="links" type="checkbox">Links (removes <span style=
-                "text-decoration: underline">all</span> underlining)
-            </div>
-            <div class="box">
-                <input id="line_breaks" type="checkbox">Line breaks
-            </div>
-            <div class="box">
-                <input id="paras" type="checkbox">Paragraph breaks
-            </div>
-            <div class="box">
-                <input id="multiple" type="checkbox">Multiple spaces
-            </div>
-            <div class="box">
-                <input id="tabs" type="checkbox">Tabs
-            </div>
-        </div>
-    </div>
     </div>
     <!-- Bottom row of buttons -->
     <div>
         <div class="bottom-button-update">
-            <button class="action" id="update" onclick=
-            "updateButton();">Save</button>
+            <button class="action" id="update" onclick="updateButton();">Save</button>
         </div>
         <div class="bottom-button-save-clear">
-            <button disabled id="save_clear" onclick=
-            "updateClearButton();">Save and clean now</button>
+            <button id="save_clear" onclick="updateClearButton();" disabled>Save and clean now</button>
         </div>
         <div class="bottom-button-close">
-            <button id="close" onclick=
-            "google.script.host.close();">Cancel</button>
+            <button id="close" onclick="google.script.host.close();">Cancel</button>
         </div>
-    </div><!-- Javascript -->
+    </div>
+    <!-- Javascript -->
     <script>
-    $(function() {
-        google.script.run
-            .withSuccessHandler(updateOptionsDialog)
-            .getUserSettings();
-    });
+        $(function() {
+            google.script.run
+                .withSuccessHandler(updateOptionsDialog)
+                .getUserSettings();
+        });
 
-    $('#links').click(function() {
-    if ($(this).is(':checked')) {
-        $('#underline').attr('checked', false);
-        $('#underline').attr('disabled', true);
-    } else {
-        $('#underline').attr('disabled', false);
-        }
-    });
+        $('#links').click(function() {
+            if ($(this).is(':checked')) {
+                $('#underline').attr('checked', false);
+                $('#underline').attr('disabled', true);
+            } else {
+                $('#underline').attr('disabled', false);
+            }
+        });
 
-    function updateOptionsDialog(user_settings) {
+        function updateOptionsDialog(user_settings) {
 
-        if (user_settings.selected == 'true') {
-            document.getElementById('save_clear').disabled = false;
-        }
-        if (user_settings.bold == 'true') {
-            $('#bold').prop('checked', true);
-        } else {
-            $('#bold').prop('checked', false);
+            if (user_settings.selected == 'true') {
+                document.getElementById('save_clear').disabled = false;
+            }
+            if (user_settings.bold == 'true') {
+                $('#bold').prop('checked', true);
+            } else {
+                $('#bold').prop('checked', false);
+            }
+
+            if (user_settings.italic == 'true') {
+                $('#italic').prop('checked', true);
+            } else {
+                $('#italic').prop('checked', false);
+            }
+
+            if (user_settings.underline == 'true') {
+                $('#underline').prop('checked', true);
+            } else {
+                $('#underline').prop('checked', false);
+            }
+
+            if (user_settings.strike == 'true') {
+                $('#strike').prop('checked', true);
+            } else {
+                $('#strike').prop('checked', false);
+            }
+
+            if (user_settings.links == 'true') {
+                $('#links').prop('checked', true);
+                $('#underline').attr('disabled', true);
+                $('#underline').attr('checked', false);
+            } else {
+                $('#links').prop('checked', false);
+            }
+
+            if (user_settings.line_breaks == 'true') {
+                $('#line_breaks').prop('checked', true);
+            } else {
+                $('#line_breaks').prop('checked', false);
+            }
+            if (user_settings.paras == 'true') {
+                $('#paras').prop('checked', true);
+            } else {
+                $('#paras').prop('checked', false);
+            }
+
+            if (user_settings.multiple == 'true') {
+                $('#multiple').prop('checked', true);
+            } else {
+                $('#multiple').prop('checked', false);
+            }
+
+            if (user_settings.tabs == 'true') {
+                $('#tabs').prop('checked', true);
+            } else {
+                $('#tabs').prop('checked', false);
+            }
+            $('#spinner').hide();
+            $('#allbox').show();
         }
 
-        if (user_settings.italic == 'true') {
-            $('#italic').prop('checked', true);
-        } else {
-            $('#italic').prop('checked', false);
-        }
-
-        if (user_settings.underline == 'true') {
-            $('#underline').prop('checked', true);
-        } else {
-            $('#underline').prop('checked', false);
-        }
-        
-        if (user_settings.links == 'true') {
-            $('#links').prop('checked', true);
-            $('#underline').attr('disabled', true);
-            $('#underline').attr('checked', false);
-        } else {
-            $('#links').prop('checked', false);
-        }
-        
-        if (user_settings.line_breaks == 'true') {
-            $('#line_breaks').prop('checked', true);
-        } else {
-            $('#line_breaks').prop('checked', false);
-        }
-        if (user_settings.paras == 'true') {
-            $('#paras').prop('checked', true);
-        } else {
-            $('#paras').prop('checked', false);
-        }
-        
-        if (user_settings.multiple == 'true') {
-            $('#multiple').prop('checked', true);
-        } else {
-            $('#multiple').prop('checked', false);
-        }
-        
-        if (user_settings.tabs == 'true') {
-            $('#tabs').prop('checked', true);
-        } else {
-            $('#tabs').prop('checked', false);
-        }
-        $('#spinner').hide();
-        $('#allbox').show();
-    }
-
-    function updateButton() {
-        google.script.run.updateDocument(
-            $('#bold').prop('checked'),
-            $('#italic').prop('checked'),
-            $('#underline').prop('checked'),
-            $('#links').prop('checked'),
-            $('#line_breaks').prop('checked'),
-            $('#paras').prop('checked'),
-            $('#multiple').prop('checked'),
-            $('#tabs').prop('checked')
-        );
-
-        google.script.host.close()
-    }
-
-    function updateClearButton() {
-        google.script.run.updateClear(
-            $('#bold').prop('checked'),
-            $('#italic').prop('checked'),
-            $('#underline').prop('checked'),
-            $('#links').prop('checked'),
-            $('#line_breaks').prop('checked'),
-            $('#paras').prop('checked'),
-            $('#multiple').prop('checked'),
-            $('#tabs').prop('checked')
+        function updateButton() {
+            google.script.run.updateDocument(
+                $('#bold').prop('checked'),
+                $('#italic').prop('checked'),
+                $('#underline').prop('checked'),
+                $('#strike').prop('checked'),
+                $('#links').prop('checked'),
+                $('#line_breaks').prop('checked'),
+                $('#paras').prop('checked'),
+                $('#multiple').prop('checked'),
+                $('#tabs').prop('checked')
             );
-            
-        google.script.host.close()
-    }
+
+            google.script.host.close()
+        }
+
+        function updateClearButton() {
+            google.script.run.updateClear(
+                $('#bold').prop('checked'),
+                $('#italic').prop('checked'),
+                $('#underline').prop('checked'),
+                $('#strike').prop('checked'),
+                $('#links').prop('checked'),
+                $('#line_breaks').prop('checked'),
+                $('#paras').prop('checked'),
+                $('#multiple').prop('checked'),
+                $('#tabs').prop('checked')
+            );
+
+            google.script.host.close()
+        }
     </script>
 </body>
+
 </html>
