@@ -40,6 +40,7 @@ function getUserSettings() {
       bold: userProperties.getProperty('CLEAR_bold'),
       italic: userProperties.getProperty('CLEAR_italic'),
       underline: userProperties.getProperty('CLEAR_underline'),
+      strike: userProperties.getProperty('CLEAR_strike'),
       links: userProperties.getProperty('CLEAR_links'),
       line_breaks: userProperties.getProperty('CLEAR_line_breaks'),
       paras: userProperties.getProperty('CLEAR_paras'),
@@ -51,12 +52,13 @@ function getUserSettings() {
   }
   // Update document from the options dialog (first sets new document properties)
 
-function updateDocument(bold, italic, underline, links, line_breaks, paras,
+function updateDocument(bold, italic, underline, strike, links, line_breaks, paras,
   multiple, tabs) {
   var userProperties = PropertiesService.getUserProperties();
   userProperties.setProperty('CLEAR_bold', bold);
   userProperties.setProperty('CLEAR_italic', italic);
   userProperties.setProperty('CLEAR_underline', underline);
+  userProperties.setProperty('CLEAR_strike', strike);
   userProperties.setProperty('CLEAR_links', links);
   userProperties.setProperty('CLEAR_line_breaks', line_breaks);
   userProperties.setProperty('CLEAR_paras', paras);
@@ -64,12 +66,13 @@ function updateDocument(bold, italic, underline, links, line_breaks, paras,
   userProperties.setProperty('CLEAR_tabs', tabs);
 }
 
-function updateClear(bold, italic, underline, links, line_breaks, paras,
+function updateClear(bold, italic, underline, strike, links, line_breaks, paras,
     multiple, tabs) {
     var userProperties = PropertiesService.getUserProperties();
     userProperties.setProperty('CLEAR_bold', bold);
     userProperties.setProperty('CLEAR_italic', italic);
     userProperties.setProperty('CLEAR_underline', underline);
+    userProperties.setProperty('CLEAR_strike', strike);
     userProperties.setProperty('CLEAR_links', links);
     userProperties.setProperty('CLEAR_line_breaks', line_breaks);
     userProperties.setProperty('CLEAR_paras', paras);
@@ -84,6 +87,7 @@ function cleanText() {
   var CLEAR_bold = userProperties.getProperty('CLEAR_bold');
   var CLEAR_italic = userProperties.getProperty('CLEAR_italic');
   var CLEAR_underline = userProperties.getProperty('CLEAR_underline');
+  var CLEAR_strike = userProperties.getProperty('CLEAR_strike');
   var CLEAR_links = userProperties.getProperty('CLEAR_links');
   var CLEAR_line_breaks = userProperties.getProperty('CLEAR_line_breaks');
   var CLEAR_paras = userProperties.getProperty('CLEAR_paras');
@@ -111,7 +115,10 @@ function cleanText() {
         if (CLEAR_underline != 'true') {
           style[DocumentApp.Attribute.UNDERLINE] = null;
         }
-        if (CLEAR_links) {
+        if (CLEAR_strike != 'true') {
+          style[DocumentApp.Attribute.STRIKETHROUGH] = null;
+        }
+        if (CLEAR_links == 'true') {
           style[DocumentApp.Attribute.LINK_URL] = null;
         }
         // Add all standard clearable attributes to style array
@@ -121,7 +128,6 @@ function cleanText() {
         style[DocumentApp.Attribute.LINE_SPACING] = null;
         style[DocumentApp.Attribute.SPACING_BEFORE] = null;
         style[DocumentApp.Attribute.SPACING_AFTER] = null;
-        style[DocumentApp.Attribute.STRIKETHROUGH] = null;
         style[DocumentApp.Attribute.FOREGROUND_COLOR] = null;
         style[DocumentApp.Attribute.BACKGROUND_COLOR] = null;
         style[DocumentApp.Attribute.FONT_FAMILY] = null;
@@ -131,7 +137,7 @@ function cleanText() {
           style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
           text.setAttributes(element.getStartOffset(), element.getEndOffsetInclusive(),
             style);
-          if (CLEAR_line_breaks) {
+          if (CLEAR_line_breaks == 'true') {
             var start = element.getStartOffset();
             var finish = element.getEndOffsetInclusive();
             var oldText = text.getText()
@@ -147,12 +153,12 @@ function cleanText() {
               }
             }
           }
-          if (CLEAR_paras) {
+          if (CLEAR_paras == 'true') {
             var type = element.getElement()
               .getParent()
               .getType();
             if (type == "PARAGRAPH") {
-              if (CLEAR_multiple && text.getText()
+              if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
                 text.replaceText("[ ][ ]+", " ");
                 var firstChar = text.getText()
@@ -209,9 +215,14 @@ function cleanText() {
             style[DocumentApp.Attribute.INDENT_START] = null;
             style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
           } else {
-            style[DocumentApp.Attribute.INDENT_START] = 36;
-            style[DocumentApp.Attribute.INDENT_FIRST_LINE] = 18;
+            var nest = theelement.asListItem()
+              .getNestingLevel();
+            var newstart = nest * 36 + 36;
+            var newfirst = nest * 36 + 18;
+            style[DocumentApp.Attribute.INDENT_START] = newstart;
+            style[DocumentApp.Attribute.INDENT_FIRST_LINE] = newfirst;
           }
+          Logger.log(style);
           text.setAttributes(style);
           var type = theelement.getType();
           if (type == "TABLE_CELL") {
@@ -248,14 +259,14 @@ function cleanText() {
               }
             }
           }
-          if (CLEAR_line_breaks) {
+          if (CLEAR_line_breaks == 'true') {
             text.replaceText("\\v+", " ");
           }
-          if (CLEAR_paras) {
+          if (CLEAR_paras == 'true') {
             var type = element.getElement()
               .getType();
             if (type == "PARAGRAPH") {
-              if (CLEAR_multiple && text.getText()
+              if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
                 text.replaceText("[ ][ ]+", " ");
                 var firstChar = text.getText()
@@ -279,10 +290,9 @@ function cleanText() {
                 var nextparastyle = para.getNextSibling()
                   .getAttributes();
               }
-              if (i != elements.length - 1 && paralength == 0 &&
-                nextparastyle != "Normal") {
+              if (i == 0 && paralength == 0 && nextparastyle != "Normal") {
                 para.removeFromParent();
-              };
+              }
               if (parastyle == "Normal") {
                 if (prev) {
                   var prevparastyle = prev.getAttributes()
@@ -290,12 +300,11 @@ function cleanText() {
                 }
                 if (prev && i > 0 && prev.getType() == "PARAGRAPH" &&
                   prevparastyle == "Normal") {
-                  var check = prev.asText()
+                  var prevlength = prev.asText()
                     .getText()
                     .length;
-                  if (check > 0) {
-                    prev
-                      .asParagraph()
+                  if (paralength > 0) {
+                    prev.asParagraph()
                       .appendText(" ");
                   }
                   para.merge();
@@ -311,6 +320,7 @@ function cleanText() {
                 var prev = para.getPreviousSibling();
                 var paratext = para.asText()
                   .getText();
+                var paralength = paratext.length;
                 if (prev) {
                   var prevtext = prev.asText()
                     .getText();
@@ -318,7 +328,7 @@ function cleanText() {
                   var prevchar = prevtext.charAt(prevlength - 1);
                 }
                 if (prev && prevlength > 0 && prevchar == " ") {
-                  if (CLEAR_multiple) {
+                  if (CLEAR_multiple == 'true') {
                     var newprevtext = prev.asText()
                       .replaceText("[ ][ ]+", " ");
                     var newlength = newprevtext.getText()
@@ -335,7 +345,7 @@ function cleanText() {
                       .deleteText(prevlength - 1, prevlength - 1);
                   }
                 }
-                if (CLEAR_multiple && celltext.getText()
+                if (CLEAR_multiple == 'true' && celltext.getText()
                   .length > 0) {
                   celltext.replaceText("[ ][ ]+", " ");
                   var firstChar = celltext.getText()
@@ -346,6 +356,13 @@ function cleanText() {
                 }
                 var parastyle = para.getAttributes()
                   .HEADING;
+                if (para.getNextSibling()) {
+                  var nextparastyle = para.getNextSibling()
+                    .getAttributes();
+                }
+                if (p == 0 && paralength == 0 && nextparastyle != "Normal") {
+                  para.removeFromParent();
+                }
                 if (parastyle == "Normal") {
                   if (prev) {
                     var prevparastyle = prev.getAttributes()
@@ -353,7 +370,7 @@ function cleanText() {
                   }
                   if (prev && prev.getType() == "PARAGRAPH" && prevparastyle ==
                     "Normal") {
-                    if (prevlength > 0) {
+                    if (paralength > 0) {
                       para.getPreviousSibling()
                         .asParagraph()
                         .appendText(" ");
@@ -383,6 +400,7 @@ function cleanText() {
                     var prev = para.getPreviousSibling();
                     var paratext = para.asText()
                       .getText();
+                    var paralength = paratext.length;
                     if (prev) {
                       var prevtext = prev.asText()
                         .getText();
@@ -390,7 +408,7 @@ function cleanText() {
                       var prevchar = prevtext.charAt(prevlength - 1);
                     }
                     if (prev && prevlength > 0 && prevchar == " ") {
-                      if (CLEAR_multiple) {
+                      if (CLEAR_multiple == 'true') {
                         var newprevtext = prev.asText()
                           .replaceText("[ ][ ]+", " ");
                         var newlength = newprevtext.getText()
@@ -407,7 +425,7 @@ function cleanText() {
                           .deleteText(prevlength - 1, prevlength - 1);
                       }
                     }
-                    if (CLEAR_multiple && celltext.getText()
+                    if (CLEAR_multiple == 'true' && celltext.getText()
                       .length > 0) {
                       celltext.replaceText("[ ][ ]+", " ");
                       var firstChar = celltext.getText()
@@ -418,6 +436,14 @@ function cleanText() {
                     }
                     var parastyle = para.getAttributes()
                       .HEADING;
+                    if (para.getNextSibling()) {
+                      var nextparastyle = para.getNextSibling()
+                        .getAttributes();
+                    }
+                    if (p == 0 && paralength == 0 && nextparastyle !=
+                      "Normal") {
+                      para.removeFromParent();
+                    }
                     if (parastyle == "Normal") {
                       if (prev) {
                         var prevparastyle = prev.getAttributes()
@@ -425,11 +451,7 @@ function cleanText() {
                       }
                       if (prev && prev.getType() == "PARAGRAPH" &&
                         prevparastyle == "Normal") {
-                        var check = para.getPreviousSibling()
-                          .asText()
-                          .getText()
-                          .length;
-                        if (check > 0) {
+                        if (paralength > 0) {
                           para.getPreviousSibling()
                             .asParagraph()
                             .appendText(" ");
@@ -445,10 +467,10 @@ function cleanText() {
         }
       }
     }
-    if (CLEAR_tabs) {
+    if (CLEAR_tabs == 'true') {
       removeTabs();
     }
-    if (CLEAR_multiple) {
+    if (CLEAR_multiple == 'true') {
       removeMultipleSpaces();
     }
   }
@@ -561,6 +583,9 @@ function removeParaBreaks() {
             }
             var parastyle = para.getAttributes()
               .HEADING;
+            if (i == 0 && paralength == 0 && nextparastyle != "Normal") {
+              para.removeFromParent();
+            };
             if (parastyle == "Normal") {
               if (prev) {
                 var prevparastyle = prev.getAttributes()
@@ -592,6 +617,13 @@ function removeParaBreaks() {
             }
             var parastyle = para.getAttributes()
               .HEADING;
+            if (para.getNextSibling()) {
+              var nextparastyle = para.getNextSibling()
+                .getAttributes();
+            }
+            if (i == 0 && paralength == 0 && nextparastyle != "Normal") {
+              para.removeFromParent();
+            }
             if (parastyle == "Normal") {
               if (prev) {
                 var prevparastyle = prev.getAttributes()
@@ -599,11 +631,7 @@ function removeParaBreaks() {
               }
               if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle ==
                 "Normal") {
-                var check = para.getPreviousSibling()
-                  .asText()
-                  .getText()
-                  .length;
-                if (check > 0) {
+                if (paralength > 0) {
                   para.getPreviousSibling()
                     .asParagraph()
                     .appendText(" ");
@@ -623,6 +651,7 @@ function removeParaBreaks() {
               var prev = para.getPreviousSibling();
               var paratext = para.asText()
                 .getText();
+              var paralength = paratext.length;
               if (prev) {
                 var prevtext = prev.asText()
                   .getText();
@@ -635,17 +664,20 @@ function removeParaBreaks() {
               }
               var parastyle = para.getAttributes()
                 .HEADING;
+              if (para.getNextSibling()) {
+                var nextparastyle = para.getNextSibling()
+                  .getAttributes();
+              }
+              if (p == 0 && paralength == 0 && nextparastyle != "Normal") {
+                para.removeFromParent();
+              }
               if (parastyle == "Normal") {
                 if (prev) {
                   var prevparastyle = prev.getAttributes()
                     .HEADING;
                   if (prev.getType() == "PARAGRAPH" && prevparastyle ==
                     "Normal") {
-                    var check = para.getPreviousSibling()
-                      .asText()
-                      .getText()
-                      .length;
-                    if (check > 0) {
+                    if (paralength > 0) {
                       para.getPreviousSibling()
                         .asParagraph()
                         .appendText(" ");
@@ -676,6 +708,7 @@ function removeParaBreaks() {
                   var prev = para.getPreviousSibling();
                   var paratext = para.asText()
                     .getText();
+                  var paralength = paratext.length;
                   if (prev) {
                     var prevtext = prev.asText()
                       .getText();
@@ -688,17 +721,20 @@ function removeParaBreaks() {
                   }
                   var parastyle = para.getAttributes()
                     .HEADING;
+                  if (para.getNextSibling()) {
+                    var nextparastyle = para.getNextSibling()
+                      .getAttributes();
+                  }
+                  if (p == 0 && paralength == 0 && nextparastyle != "Normal") {
+                    para.removeFromParent();
+                  }
                   if (parastyle == "Normal") {
                     if (prev) {
                       var prevparastyle = prev.getAttributes()
                         .HEADING;
                       if (prev.getType() == "PARAGRAPH" && prevparastyle ==
                         "Normal") {
-                        var check = para.getPreviousSibling()
-                          .asText()
-                          .getText()
-                          .length;
-                        if (check > 0) {
+                        if (paralength > 0) {
                           para.getPreviousSibling()
                             .asParagraph()
                             .appendText(" ");
