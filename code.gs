@@ -1,4 +1,5 @@
 // Create Text Cleaner sub-menu menu in the add-on menu
+
 function onInstall(e) {
   onOpen(e);
 }
@@ -15,7 +16,8 @@ function onOpen(e) {
       .addItem('Remove tabs', 'removeTabs')
       .addToUi();
   }
-  // Open options dialog from add-on menu
+  
+// Open options dialog from add-on menu
 
 function showDialog() {
     var html = HtmlService.createHtmlOutputFromFile('dialog')
@@ -25,17 +27,20 @@ function showDialog() {
     DocumentApp.getUi() // Or DocumentApp or FormApp.
       .showModalDialog(html, 'Configure Text Cleaner');
   }
-  // Interact with saved style settings
+
+// Interact with saved style settings, return as an object for html dialog to interact with
 
 function getUserSettings() {
     var userProperties = PropertiesService.getUserProperties();
     var selection = DocumentApp.getActiveDocument()
       .getSelection();
+      
     if (selection) {
       var selected = 'true';
     } else {
       var selected = 'false';
     }
+    
     var user_settings = {
       bold: userProperties.getProperty('CLEAR_bold'),
       italic: userProperties.getProperty('CLEAR_italic'),
@@ -48,13 +53,16 @@ function getUserSettings() {
       tabs: userProperties.getProperty('CLEAR_tabs'),
       selected: selected
     };
+    
     return user_settings;
   }
-  // Update document from the options dialog (first sets new document properties)
+  
+// Update document with settings from the options dialog 
 
 function updateDocument(bold, italic, underline, strike, links, line_breaks, paras,
   multiple, tabs) {
   var userProperties = PropertiesService.getUserProperties();
+  
   userProperties.setProperty('CLEAR_bold', bold);
   userProperties.setProperty('CLEAR_italic', italic);
   userProperties.setProperty('CLEAR_underline', underline);
@@ -65,6 +73,8 @@ function updateDocument(bold, italic, underline, strike, links, line_breaks, par
   userProperties.setProperty('CLEAR_multiple', multiple);
   userProperties.setProperty('CLEAR_tabs', tabs);
 }
+
+// Update document with settings from the options dialog and then run cleaning function
 
 function updateClear(bold, italic, underline, strike, links, line_breaks, paras,
     multiple, tabs) {
@@ -80,9 +90,13 @@ function updateClear(bold, italic, underline, strike, links, line_breaks, paras,
     userProperties.setProperty('CLEAR_tabs', tabs);
     cleanText();
   }
-  // Update document from the add-on menu
+
+// Clean text
 
 function cleanText() {
+  
+  // Retrieve user settings
+  
   var userProperties = PropertiesService.getUserProperties();
   var CLEAR_bold = userProperties.getProperty('CLEAR_bold');
   var CLEAR_italic = userProperties.getProperty('CLEAR_italic');
@@ -93,6 +107,9 @@ function cleanText() {
   var CLEAR_paras = userProperties.getProperty('CLEAR_paras');
   var CLEAR_multiple = userProperties.getProperty('CLEAR_multiple');
   var CLEAR_tabs = userProperties.getProperty('CLEAR_tabs');
+  
+  // Get the selected text
+  
   var selection = DocumentApp.getActiveDocument()
     .getSelection();
   if (selection) {
@@ -104,8 +121,9 @@ function cleanText() {
         .editAsText) {
         var text = element.getElement()
           .editAsText();
+          
         var style = {};
-        // Add user's unwanted attributes to style array
+        
         if (CLEAR_bold != 'true') {
           style[DocumentApp.Attribute.BOLD] = null;
         }
@@ -121,7 +139,7 @@ function cleanText() {
         if (CLEAR_links == 'true') {
           style[DocumentApp.Attribute.LINK_URL] = null;
         }
-        // Add all standard clearable attributes to style array
+        
         style[DocumentApp.Attribute.FONT_SIZE] = null;
         style[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] = null;
         style[DocumentApp.Attribute.INDENT_END] = null;
@@ -131,12 +149,18 @@ function cleanText() {
         style[DocumentApp.Attribute.FOREGROUND_COLOR] = null;
         style[DocumentApp.Attribute.BACKGROUND_COLOR] = null;
         style[DocumentApp.Attribute.FONT_FAMILY] = null;
+        
         // Deal with partially selected text
+        
         if (element.isPartial()) {
           style[DocumentApp.Attribute.INDENT_START] = null;
           style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
+          
           text.setAttributes(element.getStartOffset(), element.getEndOffsetInclusive(),
             style);
+          
+          // Removal options (except tabs and multiple spaces, which come towards the end of the function)
+            
           if (CLEAR_line_breaks == 'true') {
             var start = element.getStartOffset();
             var finish = element.getEndOffsetInclusive();
@@ -153,11 +177,14 @@ function cleanText() {
               }
             }
           }
+          
           if (CLEAR_paras == 'true') {
             var type = element.getElement()
               .getParent()
               .getType();
             if (type == "PARAGRAPH") {
+              
+              // Clear multiple spaces before paragraph breaks to avoid multiple spaces for multiple blank paras
               if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
                 text.replaceText("[ ][ ]+", " ");
@@ -167,6 +194,7 @@ function cleanText() {
                   text.deleteText(0, 0);
                 }
               }
+              
               var para = element.getElement()
                 .getParent()
               var paratext = para.asText()
@@ -174,23 +202,38 @@ function cleanText() {
               var paralength = paratext.length;
               var prev = para.getPreviousSibling();
               var finalchar = paratext.charAt(paralength - 1);
+              var parastyle = para.getAttributes()
+                .HEADING;
+              
+              // Delete final character if space
+              
               if (paralength > 0 && finalchar == " ") {
                 text.deleteText(paralength - 1, paralength - 1);
               }
-              var parastyle = para.getAttributes()
-                .HEADING;
+              
+              // If first paragraph is blank, then delete the whole paragraph
+              
               if (i == 0 && paralength == 0) {
                 para.removeFromParent();
               }
+              
+              // Delete blank paragraphs that are not the last paragraph and are not followed by a heading
+              
               if (i != elements.length - 1 && paralength == 0 &&
                 nextparastyle != "Normal") {
                 para.removeFromParent();
               };
+              
+              // Deal with "normal" style paragraphs
+              
               if (parastyle == "Normal") {
                 if (prev) {
                   var prevparastyle = prev.getAttributes()
                     .HEADING;
                 }
+                
+                // In paragraphs that are not the first,  append a space to previous "normal" non-blank paragraphs
+                
                 if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle ==
                   "Normal") {
                   var check = para.getPreviousSibling()
