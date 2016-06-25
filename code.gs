@@ -31,6 +31,7 @@ function showDialog() {
 // Interact with saved style settings, return as an object for html dialog to interact with
 
 function getUserSettings() {
+  
     var userProperties = PropertiesService.getUserProperties();
     var selection = DocumentApp.getActiveDocument()
       .getSelection();
@@ -61,6 +62,7 @@ function getUserSettings() {
 
 function updateDocument(bold, italic, underline, strike, links, line_breaks, paras,
   multiple, tabs) {
+    
   var userProperties = PropertiesService.getUserProperties();
   
   userProperties.setProperty('CLEAR_bold', bold);
@@ -78,7 +80,9 @@ function updateDocument(bold, italic, underline, strike, links, line_breaks, par
 
 function updateClear(bold, italic, underline, strike, links, line_breaks, paras,
     multiple, tabs) {
+      
     var userProperties = PropertiesService.getUserProperties();
+    
     userProperties.setProperty('CLEAR_bold', bold);
     userProperties.setProperty('CLEAR_italic', italic);
     userProperties.setProperty('CLEAR_underline', underline);
@@ -88,6 +92,7 @@ function updateClear(bold, italic, underline, strike, links, line_breaks, paras,
     userProperties.setProperty('CLEAR_paras', paras);
     userProperties.setProperty('CLEAR_multiple', multiple);
     userProperties.setProperty('CLEAR_tabs', tabs);
+    
     cleanText();
   }
 
@@ -112,13 +117,20 @@ function cleanText() {
   
   var selection = DocumentApp.getActiveDocument()
     .getSelection();
+    
   if (selection) {
+    
     var elements = selection.getRangeElements();
+    
     for (var i = 0; i < elements.length; i++) {
+      
       var element = elements[i];
+      
       // Only deal with text elements
+      
       if (element.getElement()
         .editAsText) {
+          
         var text = element.getElement()
           .editAsText();
           
@@ -127,15 +139,19 @@ function cleanText() {
         if (CLEAR_bold != 'true') {
           style[DocumentApp.Attribute.BOLD] = null;
         }
+        
         if (CLEAR_italic != 'true') {
           style[DocumentApp.Attribute.ITALIC] = null;
         }
+        
         if (CLEAR_underline != 'true') {
           style[DocumentApp.Attribute.UNDERLINE] = null;
         }
+        
         if (CLEAR_strike != 'true') {
           style[DocumentApp.Attribute.STRIKETHROUGH] = null;
         }
+        
         if (CLEAR_links == 'true') {
           style[DocumentApp.Attribute.LINK_URL] = null;
         }
@@ -153,6 +169,7 @@ function cleanText() {
         // Deal with partially selected text
         
         if (element.isPartial()) {
+          
           style[DocumentApp.Attribute.INDENT_START] = null;
           style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
           
@@ -164,34 +181,47 @@ function cleanText() {
           // Removal options (except tabs and multiple spaces, which come towards the end of the function)
             
           if (CLEAR_line_breaks == 'true') {
+            
             var start = element.getStartOffset();
             var finish = element.getEndOffsetInclusive();
             var oldText = text.getText()
               .slice(start, finish);
+              
             if (oldText.match(/\r/)) {
+              
               var number = oldText.match(/\r/g)
                 .length;
+                
               for (var j = 0; j < number; j++) {
+                
                 var location = oldText.search(/\r/);
+                
                 text.deleteText(start + location, start + location);
                 text.insertText(start + location, ' ');
+                
                 var oldText = oldText.replace(/\r/, ' ');
               }
             }
           }
           
           if (CLEAR_paras == 'true') {
+            
             var type = element.getElement()
               .getParent()
               .getType();
+              
             if (type == "PARAGRAPH") {
               
               // Clear multiple spaces before paragraph breaks to avoid multiple spaces for multiple blank paras
+              
               if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
+                  
                 text.replaceText("[ ][ ]+", " ");
+                
                 var firstChar = text.getText()
                   .charAt(0);
+                  
                 if (firstChar == " ") {
                   text.deleteText(0, 0);
                 }
@@ -229,7 +259,9 @@ function cleanText() {
               // Deal with "normal" style paragraphs
               
               if (parastyle == "Normal") {
+                
                 if (prev) {
+                  
                   var prevparastyle = prev.getAttributes()
                     .HEADING;
                 }
@@ -238,10 +270,12 @@ function cleanText() {
                 
                 if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle ==
                   "Normal") {
+                    
                   var check = para.getPreviousSibling()
                     .asText()
                     .getText()
                     .length;
+                    
                   if (check > 0) {
                     para.getPreviousSibling()
                       .asParagraph()
@@ -255,6 +289,7 @@ function cleanText() {
         }
         // Deal with fully selected text
         else {
+          
           var theelement = element.getElement();
           var type = theelement.getType();
           
@@ -264,10 +299,12 @@ function cleanText() {
             style[DocumentApp.Attribute.INDENT_START] = null;
             style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
           } else {
+            
             var nest = theelement.asListItem()
               .getNestingLevel();
             var newstart = nest * 36 + 36;
             var newfirst = nest * 36 + 18;
+            
             style[DocumentApp.Attribute.INDENT_START] = newstart;
             style[DocumentApp.Attribute.INDENT_FIRST_LINE] = newfirst;
           }
@@ -279,14 +316,17 @@ function cleanText() {
           // Bury into fully selected table cells to deal with contained paragraphs
           
           if (type == "TABLE_CELL") {
+            
             var numchi = element.getElement()
               .asTableCell()
               .getNumChildren();
               
             for (var p = numchi - 1; p >= 0; p--) {
+              
               var para = theelement.asTableCell()
                 .getChild(p);
               var celltext = para.editAsText();
+              
               para.setAttributes(style);
               celltext.setAttributes(style);
             }
@@ -295,10 +335,12 @@ function cleanText() {
           // Bury into fully selected tables to deal with cells, then again to deal with paragraphs
           
           if (type == "TABLE") {
+            
             var numrows = theelement.asTable()
               .getNumChildren();
               
             for (var q = 0; q < numrows; q++) {
+              
               var row = element.getElement()
                 .asTable()
                 .getChild(q)
@@ -307,11 +349,13 @@ function cleanText() {
               var numcells = row.getNumChildren();
               
               for (var r = 0; r < numcells; r++) {
+                
                 var cell = row.getChild(r)
                   .asTableCell();
                 var numpara = cell.getNumChildren();
                 
                 for (var p = numpara - 1; p >= 0; p--) {
+                  
                   var para = cell.getChild(p);
                   var celltext = para.editAsText();
                   
@@ -333,11 +377,15 @@ function cleanText() {
               .getType();
               
             if (type == "PARAGRAPH") {
+              
               if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
+                  
                 text.replaceText("[ ][ ]+", " ");
+                
                 var firstChar = text.getText()
                   .charAt(0);
+                  
                 if (firstChar == " ") {
                   text.deleteText(0, 0);
                 }
@@ -399,10 +447,18 @@ function cleanText() {
                   para.merge();
                 }
               }
+              
+            // Bury into fully selected table cells
+            
             } else if (type == "TABLE_CELL") {
+              
               var numchi = theelement.asTableCell()
                 .getNumChildren();
+              
+              // Iterate backwards through the paragraphs within the cell
+                
               for (var p = numchi - 1; p >= 0; p--) {
+                
                 var para = theelement.asTableCell()
                   .getChild(p);
                 var celltext = para.editAsText();
@@ -410,18 +466,32 @@ function cleanText() {
                 var paratext = para.asText()
                   .getText();
                 var paralength = paratext.length;
+                
                 if (prev) {
+                  
                   var prevtext = prev.asText()
                     .getText();
                   var prevlength = prevtext.length;
                   var prevchar = prevtext.charAt(prevlength - 1);
                 }
+                
+                // Deal with previous paragraph that ends with a space
+                
                 if (prev && prevlength > 0 && prevchar == " ") {
+                  var parastyle = para.getAttributes()
+                  .HEADING;
+                  
+                  // Replace multiple spaces in the previous paragraph first in case multiple at the end of pararaph
+                  
                   if (CLEAR_multiple == 'true') {
+                    
                     var newprevtext = prev.asText()
                       .replaceText("[ ][ ]+", " ");
                     var newlength = newprevtext.getText()
                       .length;
+                    
+                    // If multiple spaces have been replaced, then delete the character at the end of the new paragraph text
+                      
                     if (newlength != prevlength) {
                       prev.asText()
                         .deleteText(newlength - 1, newlength - 1);
@@ -434,31 +504,52 @@ function cleanText() {
                       .deleteText(prevlength - 1, prevlength - 1);
                   }
                 }
+                
+                // Now deal with multiple spaces in the current paragraph
+                
                 if (CLEAR_multiple == 'true' && celltext.getText()
                   .length > 0) {
                   celltext.replaceText("[ ][ ]+", " ");
+                  
                   var firstChar = celltext.getText()
                     .charAt(0);
+                    
                   if (firstChar == " ") {
                     celltext.deleteText(0, 0);
                   }
                 }
-                var parastyle = para.getAttributes()
-                  .HEADING;
+                
+                // Get the attributes of the subsequent paragraph if there is one
+
                 if (para.getNextSibling()) {
                   var nextparastyle = para.getNextSibling()
                     .getAttributes();
                 }
+                
+                // Remove blank paragraphs that are followed by a normal paragraph
+                
                 if (p == 0 && paralength == 0 && nextparastyle != "Normal") {
                   para.removeFromParent();
                 }
+                
+                // Deal with normal paragraphs
+                
                 if (parastyle == "Normal") {
+                  
+                  // Get heading style of previous paragraph
+                  
                   if (prev) {
                     var prevparastyle = prev.getAttributes()
                       .HEADING;
                   }
+                  
+                  // Deal with paragraphs that are preceded by normal paragraphs
+                  
                   if (prev && prev.getType() == "PARAGRAPH" && prevparastyle ==
                     "Normal") {
+                    
+                    // Append a space to paragraphs that are not blank
+                      
                     if (paralength > 0) {
                       para.getPreviousSibling()
                         .asParagraph()
@@ -468,21 +559,27 @@ function cleanText() {
                   }
                 }
               }
-            } else if (type == "TABLE") {
+            } else if (type == "TABLE") {// TABLE is the same as table cell, except it first iterates rows and cells
               var numrows = element.getElement()
                 .asTable()
                 .getNumChildren();
+              
               for (var q = 0; q < numrows; q++) {
+                
                 var row = element.getElement()
                   .asTable()
                   .getChild(q)
                   .asTableRow();
                 var numcells = row.getNumChildren();
+                
                 for (var r = 0; r < numcells; r++) {
+                  
                   var cell = row.getChild(r)
                     .asTableCell();
                   var numpara = cell.getNumChildren();
+                  
                   for (var p = numpara - 1; p >= 0; p--) {
+                    
                     var para = cell.asTableCell()
                       .getChild(p);
                     var celltext = para.editAsText();
@@ -490,18 +587,27 @@ function cleanText() {
                     var paratext = para.asText()
                       .getText();
                     var paralength = paratext.length;
+                    
                     if (prev) {
+                      
                       var prevtext = prev.asText()
                         .getText();
                       var prevlength = prevtext.length;
                       var prevchar = prevtext.charAt(prevlength - 1);
                     }
+                    
                     if (prev && prevlength > 0 && prevchar == " ") {
+                      
+                      var parastyle = para.getAttributes()
+                      .HEADING;
+                      
                       if (CLEAR_multiple == 'true') {
+                        
                         var newprevtext = prev.asText()
                           .replaceText("[ ][ ]+", " ");
                         var newlength = newprevtext.getText()
                           .length;
+                        
                         if (newlength != prevlength) {
                           prev.asText()
                             .deleteText(newlength - 1, newlength - 1);
@@ -514,17 +620,18 @@ function cleanText() {
                           .deleteText(prevlength - 1, prevlength - 1);
                       }
                     }
+                    
                     if (CLEAR_multiple == 'true' && celltext.getText()
                       .length > 0) {
                       celltext.replaceText("[ ][ ]+", " ");
                       var firstChar = celltext.getText()
                         .charAt(0);
+                      
                       if (firstChar == " ") {
                         celltext.deleteText(0, 0);
                       }
                     }
-                    var parastyle = para.getAttributes()
-                      .HEADING;
+                    
                     if (para.getNextSibling()) {
                       var nextparastyle = para.getNextSibling()
                         .getAttributes();
@@ -533,13 +640,16 @@ function cleanText() {
                       "Normal") {
                       para.removeFromParent();
                     }
+                    
                     if (parastyle == "Normal") {
                       if (prev) {
                         var prevparastyle = prev.getAttributes()
                           .HEADING;
                       }
+                      
                       if (prev && prev.getType() == "PARAGRAPH" &&
                         prevparastyle == "Normal") {
+                          
                         if (paralength > 0) {
                           para.getPreviousSibling()
                             .asParagraph()
