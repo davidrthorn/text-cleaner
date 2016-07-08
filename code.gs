@@ -1,5 +1,4 @@
 // Create Text Cleaner sub-menu menu in the add-on menu
-
 function onInstall(e) {
   onOpen(e);
 }
@@ -16,8 +15,7 @@ function onOpen(e) {
       .addItem('Remove tabs', 'removeTabs')
       .addToUi();
   }
-  
-// Open options dialog from add-on menu
+  // Open options dialog from add-on menu
 
 function showDialog() {
     var html = HtmlService.createHtmlOutputFromFile('dialog')
@@ -27,26 +25,23 @@ function showDialog() {
     DocumentApp.getUi() // Or DocumentApp or FormApp.
       .showModalDialog(html, 'Configure Text Cleaner');
   }
-
-// Interact with saved style settings, return as an object for html dialog to interact with
+  // Interact with saved style settings
 
 function getUserSettings() {
-  
     var userProperties = PropertiesService.getUserProperties();
     var selection = DocumentApp.getActiveDocument()
       .getSelection();
-      
     if (selection) {
       var selected = 'true';
     } else {
       var selected = 'false';
     }
-    
     var user_settings = {
       bold: userProperties.getProperty('CLEAR_bold'),
       italic: userProperties.getProperty('CLEAR_italic'),
       underline: userProperties.getProperty('CLEAR_underline'),
       strike: userProperties.getProperty('CLEAR_strike'),
+      indent: userProperties.getProperty('CLEAR_indent'),
       links: userProperties.getProperty('CLEAR_links'),
       line_breaks: userProperties.getProperty('CLEAR_line_breaks'),
       paras: userProperties.getProperty('CLEAR_paras'),
@@ -54,21 +49,17 @@ function getUserSettings() {
       tabs: userProperties.getProperty('CLEAR_tabs'),
       selected: selected
     };
-    
     return user_settings;
   }
-  
-// Update document with settings from the options dialog 
+  // Update document from the options dialog (first sets new document properties)
 
-function updateDocument(bold, italic, underline, strike, links, line_breaks, paras,
-  multiple, tabs) {
-    
+function updateDocument(bold, italic, underline, strike, indent, links, line_breaks, paras, multiple, tabs) {
   var userProperties = PropertiesService.getUserProperties();
-  
   userProperties.setProperty('CLEAR_bold', bold);
   userProperties.setProperty('CLEAR_italic', italic);
   userProperties.setProperty('CLEAR_underline', underline);
   userProperties.setProperty('CLEAR_strike', strike);
+  userProperties.setProperty('CLEAR_indent', indent);
   userProperties.setProperty('CLEAR_links', links);
   userProperties.setProperty('CLEAR_line_breaks', line_breaks);
   userProperties.setProperty('CLEAR_paras', paras);
@@ -76,157 +67,107 @@ function updateDocument(bold, italic, underline, strike, links, line_breaks, par
   userProperties.setProperty('CLEAR_tabs', tabs);
 }
 
-// Update document with settings from the options dialog and then run cleaning function
-
-function updateClear(bold, italic, underline, strike, links, line_breaks, paras,
-    multiple, tabs) {
-      
+function updateClear(bold, italic, underline, strike, indent, links, line_breaks, paras, multiple, tabs) {
     var userProperties = PropertiesService.getUserProperties();
-    
     userProperties.setProperty('CLEAR_bold', bold);
     userProperties.setProperty('CLEAR_italic', italic);
     userProperties.setProperty('CLEAR_underline', underline);
     userProperties.setProperty('CLEAR_strike', strike);
+    userProperties.setProperty('CLEAR_indent', indent);
     userProperties.setProperty('CLEAR_links', links);
     userProperties.setProperty('CLEAR_line_breaks', line_breaks);
     userProperties.setProperty('CLEAR_paras', paras);
     userProperties.setProperty('CLEAR_multiple', multiple);
     userProperties.setProperty('CLEAR_tabs', tabs);
-    
     cleanText();
   }
-
-// Clean text
+  // Update document from the add-on menu
 
 function cleanText() {
-  
-  // Retrieve user settings
-  
   var userProperties = PropertiesService.getUserProperties();
   var CLEAR_bold = userProperties.getProperty('CLEAR_bold');
   var CLEAR_italic = userProperties.getProperty('CLEAR_italic');
   var CLEAR_underline = userProperties.getProperty('CLEAR_underline');
   var CLEAR_strike = userProperties.getProperty('CLEAR_strike');
+  var CLEAR_indent = userProperties.getProperty('CLEAR_indent');
   var CLEAR_links = userProperties.getProperty('CLEAR_links');
   var CLEAR_line_breaks = userProperties.getProperty('CLEAR_line_breaks');
   var CLEAR_paras = userProperties.getProperty('CLEAR_paras');
   var CLEAR_multiple = userProperties.getProperty('CLEAR_multiple');
   var CLEAR_tabs = userProperties.getProperty('CLEAR_tabs');
-  
-  // Get the selected text
-  
   var selection = DocumentApp.getActiveDocument()
     .getSelection();
-    
   if (selection) {
-    
     var elements = selection.getRangeElements();
-    
     for (var i = 0; i < elements.length; i++) {
-      
       var element = elements[i];
-      
       // Only deal with text elements
-      
       if (element.getElement()
         .editAsText) {
-          
         var text = element.getElement()
           .editAsText();
-          
         var style = {};
-        
+        // Add user's unwanted attributes to style array
         if (CLEAR_bold != 'true') {
           style[DocumentApp.Attribute.BOLD] = null;
         }
-        
         if (CLEAR_italic != 'true') {
           style[DocumentApp.Attribute.ITALIC] = null;
         }
-        
         if (CLEAR_underline != 'true') {
           style[DocumentApp.Attribute.UNDERLINE] = null;
         }
-        
         if (CLEAR_strike != 'true') {
           style[DocumentApp.Attribute.STRIKETHROUGH] = null;
         }
-        
+        if (CLEAR_indent != 'true') {
+          style[DocumentApp.Attribute.INDENT_END] = null;
+        }
         if (CLEAR_links == 'true') {
           style[DocumentApp.Attribute.LINK_URL] = null;
         }
-        
+        // Add all standard clearable attributes to style array
         style[DocumentApp.Attribute.FONT_SIZE] = null;
         style[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] = null;
-        style[DocumentApp.Attribute.INDENT_END] = null;
         style[DocumentApp.Attribute.LINE_SPACING] = null;
         style[DocumentApp.Attribute.SPACING_BEFORE] = null;
         style[DocumentApp.Attribute.SPACING_AFTER] = null;
         style[DocumentApp.Attribute.FOREGROUND_COLOR] = null;
         style[DocumentApp.Attribute.BACKGROUND_COLOR] = null;
         style[DocumentApp.Attribute.FONT_FAMILY] = null;
-        
         // Deal with partially selected text
-        
         if (element.isPartial()) {
-          
-          style[DocumentApp.Attribute.INDENT_START] = null;
-          style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
-          
-          // Apply style to text
-          
-          text.setAttributes(element.getStartOffset(), element.getEndOffsetInclusive(),
-            style);
-          
-          // Removal options (except tabs and multiple spaces, which come towards the end of the function)
-            
+          text.setAttributes(element.getStartOffset(), element.getEndOffsetInclusive(), style);
           if (CLEAR_line_breaks == 'true') {
-            
             var start = element.getStartOffset();
             var finish = element.getEndOffsetInclusive();
             var oldText = text.getText()
               .slice(start, finish);
-              
             if (oldText.match(/\r/)) {
-              
               var number = oldText.match(/\r/g)
                 .length;
-                
               for (var j = 0; j < number; j++) {
-                
                 var location = oldText.search(/\r/);
-                
                 text.deleteText(start + location, start + location);
                 text.insertText(start + location, ' ');
-                
                 var oldText = oldText.replace(/\r/, ' ');
               }
             }
           }
-          
           if (CLEAR_paras == 'true') {
-            
             var type = element.getElement()
               .getParent()
               .getType();
-              
             if (type == "PARAGRAPH") {
-              
-              // Clear multiple spaces before paragraph breaks to avoid multiple spaces for multiple blank paras
-              
               if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
-                  
                 text.replaceText("[ ][ ]+", " ");
-                
                 var firstChar = text.getText()
                   .charAt(0);
-                  
                 if (firstChar == " ") {
                   text.deleteText(0, 0);
                 }
               }
-              
               var para = element.getElement()
                 .getParent()
               var paratext = para.asText()
@@ -234,48 +175,27 @@ function cleanText() {
               var paralength = paratext.length;
               var prev = para.getPreviousSibling();
               var finalchar = paratext.charAt(paralength - 1);
-              var parastyle = para.getAttributes()
-                .HEADING;
-              
-              // Delete final character if space
-              
               if (paralength > 0 && finalchar == " ") {
                 text.deleteText(paralength - 1, paralength - 1);
               }
-              
-              // If first paragraph is blank, then delete the whole paragraph
-              
+              var parastyle = para.getAttributes()
+                .HEADING;
               if (i == 0 && paralength == 0) {
                 para.removeFromParent();
               }
-              
-              // Delete blank paragraphs that are not the last paragraph and are not followed by a heading
-              
-              if (i != elements.length - 1 && paralength == 0 &&
-                nextparastyle != "Normal") {
+              if (i != elements.length - 1 && paralength == 0 && nextparastyle != "Normal") {
                 para.removeFromParent();
               };
-              
-              // Deal with "normal" style paragraphs
-              
               if (parastyle == "Normal") {
-                
                 if (prev) {
-                  
                   var prevparastyle = prev.getAttributes()
                     .HEADING;
                 }
-                
-                // In paragraphs that are not the first,  append a space to previous "normal" non-blank paragraphs
-                
-                if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle ==
-                  "Normal") {
-                    
+                if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                   var check = para.getPreviousSibling()
                     .asText()
                     .getText()
                     .length;
-                    
                   if (check > 0) {
                     para.getPreviousSibling()
                       .asParagraph()
@@ -289,157 +209,99 @@ function cleanText() {
         }
         // Deal with fully selected text
         else {
-          
           var theelement = element.getElement();
-          var type = theelement.getType();
-          
-          // Deal with lists
-          
           if (theelement != "ListItem") {
-            style[DocumentApp.Attribute.INDENT_START] = null;
-            style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
+            if (CLEAR_indent != 'true') {
+              style[DocumentApp.Attribute.INDENT_START] = null;
+              style[DocumentApp.Attribute.INDENT_FIRST_LINE] = null;
+            }
           } else {
-            
             var nest = theelement.asListItem()
               .getNestingLevel();
             var newstart = nest * 36 + 36;
             var newfirst = nest * 36 + 18;
-            
             style[DocumentApp.Attribute.INDENT_START] = newstart;
             style[DocumentApp.Attribute.INDENT_FIRST_LINE] = newfirst;
           }
-          
-          // Apply style to text
-          
           text.setAttributes(style);
-          
-          // Bury into fully selected table cells to deal with contained paragraphs
-          
+          var type = theelement.getType();
           if (type == "TABLE_CELL") {
-            
             var numchi = element.getElement()
               .asTableCell()
               .getNumChildren();
-              
             for (var p = numchi - 1; p >= 0; p--) {
-              
               var para = theelement.asTableCell()
                 .getChild(p);
               var celltext = para.editAsText();
-              
               para.setAttributes(style);
               celltext.setAttributes(style);
             }
           }
-          
-          // Bury into fully selected tables to deal with cells, then again to deal with paragraphs
-          
           if (type == "TABLE") {
-            
             var numrows = theelement.asTable()
               .getNumChildren();
-              
             for (var q = 0; q < numrows; q++) {
-              
               var row = element.getElement()
                 .asTable()
                 .getChild(q)
                 .asTableRow();
-                
               var numcells = row.getNumChildren();
-              
               for (var r = 0; r < numcells; r++) {
-                
                 var cell = row.getChild(r)
                   .asTableCell();
                 var numpara = cell.getNumChildren();
-                
                 for (var p = numpara - 1; p >= 0; p--) {
-                  
                   var para = cell.getChild(p);
                   var celltext = para.editAsText();
-                  
                   para.setAttributes(style);
                   celltext.setAttributes(style);
                 }
               }
             }
           }
-          
-          // Apply remove options (line breaks and paras)
-          
           if (CLEAR_line_breaks == 'true') {
             text.replaceText("\\v+", " ");
           }
-          
           if (CLEAR_paras == 'true') {
             var type = element.getElement()
               .getType();
-              
             if (type == "PARAGRAPH") {
-              
               if (CLEAR_multiple == 'true' && text.getText()
                 .length > 0) {
-                  
                 text.replaceText("[ ][ ]+", " ");
-                
                 var firstChar = text.getText()
                   .charAt(0);
-                  
                 if (firstChar == " ") {
                   text.deleteText(0, 0);
                 }
               }
-              
               var para = element.getElement();
               var paratext = para.asText()
                 .getText();
-              var parastyle = para.getAttributes()
-                .HEADING;
               var paralength = paratext.length;
               var prev = para.getPreviousSibling();
               var finalchar = paratext.charAt(paralength - 1);
-              
-              // Delete space at end of non-blank paragraphs
-              
               if (paralength > 0 && finalchar == " ") {
                 text.deleteText(paralength - 1, paralength - 1);
               }
-              
-              // Get style of next paragraph if there is one
-              
+              var parastyle = para.getAttributes()
+                .HEADING;
               if (para.getNextSibling()) {
                 var nextparastyle = para.getNextSibling()
                   .getAttributes();
               }
-              
-              // For the first paragraph, if its blank and followed by a normal paragraph, delete it
-              
               if (i == 0 && paralength == 0 && nextparastyle != "Normal") {
                 para.removeFromParent();
               }
-              
-              // Deal wtih normal paragraphs
-              
               if (parastyle == "Normal") {
-                
-                // Get the previous paragraph style, if there is one
-                
                 if (prev) {
                   var prevparastyle = prev.getAttributes()
                     .HEADING;
                 }
-                
-                // Deal with a paragraph, but not the first one, that is preceded by normal paragraph 
-                
-                if (prev && i > 0 && prev.getType() == "PARAGRAPH" &&
-                  prevparastyle == "Normal") {
+                if (prev && i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                   var prevlength = prev.asText()
                     .getText()
                     .length;
-                    
-                  // Append a space to non-blank previous paragraph
-                  
                   if (paralength > 0) {
                     prev.asParagraph()
                       .appendText(" ");
@@ -447,18 +309,10 @@ function cleanText() {
                   para.merge();
                 }
               }
-              
-            // Bury into fully selected table cells
-            
             } else if (type == "TABLE_CELL") {
-              
               var numchi = theelement.asTableCell()
                 .getNumChildren();
-              
-              // Iterate backwards through the paragraphs within the cell
-                
               for (var p = numchi - 1; p >= 0; p--) {
-                
                 var para = theelement.asTableCell()
                   .getChild(p);
                 var celltext = para.editAsText();
@@ -466,32 +320,18 @@ function cleanText() {
                 var paratext = para.asText()
                   .getText();
                 var paralength = paratext.length;
-                
                 if (prev) {
-                  
                   var prevtext = prev.asText()
                     .getText();
                   var prevlength = prevtext.length;
                   var prevchar = prevtext.charAt(prevlength - 1);
                 }
-                
-                // Deal with previous paragraph that ends with a space
-                
                 if (prev && prevlength > 0 && prevchar == " ") {
-                  var parastyle = para.getAttributes()
-                  .HEADING;
-                  
-                  // Replace multiple spaces in the previous paragraph first in case multiple at the end of pararaph
-                  
                   if (CLEAR_multiple == 'true') {
-                    
                     var newprevtext = prev.asText()
                       .replaceText("[ ][ ]+", " ");
                     var newlength = newprevtext.getText()
                       .length;
-                    
-                    // If multiple spaces have been replaced, then delete the character at the end of the new paragraph text
-                      
                     if (newlength != prevlength) {
                       prev.asText()
                         .deleteText(newlength - 1, newlength - 1);
@@ -504,52 +344,30 @@ function cleanText() {
                       .deleteText(prevlength - 1, prevlength - 1);
                   }
                 }
-                
-                // Now deal with multiple spaces in the current paragraph
-                
                 if (CLEAR_multiple == 'true' && celltext.getText()
                   .length > 0) {
                   celltext.replaceText("[ ][ ]+", " ");
-                  
                   var firstChar = celltext.getText()
                     .charAt(0);
-                    
                   if (firstChar == " ") {
                     celltext.deleteText(0, 0);
                   }
                 }
-                
-                // Get the attributes of the subsequent paragraph if there is one
-
+                var parastyle = para.getAttributes()
+                  .HEADING;
                 if (para.getNextSibling()) {
                   var nextparastyle = para.getNextSibling()
                     .getAttributes();
                 }
-                
-                // Remove blank paragraphs that are followed by a normal paragraph
-                
                 if (p == 0 && paralength == 0 && nextparastyle != "Normal") {
                   para.removeFromParent();
                 }
-                
-                // Deal with normal paragraphs
-                
                 if (parastyle == "Normal") {
-                  
-                  // Get heading style of previous paragraph
-                  
                   if (prev) {
                     var prevparastyle = prev.getAttributes()
                       .HEADING;
                   }
-                  
-                  // Deal with paragraphs that are preceded by normal paragraphs
-                  
-                  if (prev && prev.getType() == "PARAGRAPH" && prevparastyle ==
-                    "Normal") {
-                    
-                    // Append a space to paragraphs that are not blank
-                      
+                  if (prev && prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                     if (paralength > 0) {
                       para.getPreviousSibling()
                         .asParagraph()
@@ -559,27 +377,21 @@ function cleanText() {
                   }
                 }
               }
-            } else if (type == "TABLE") {// TABLE is the same as table cell, except it first iterates rows and cells
+            } else if (type == "TABLE") {
               var numrows = element.getElement()
                 .asTable()
                 .getNumChildren();
-              
               for (var q = 0; q < numrows; q++) {
-                
                 var row = element.getElement()
                   .asTable()
                   .getChild(q)
                   .asTableRow();
                 var numcells = row.getNumChildren();
-                
                 for (var r = 0; r < numcells; r++) {
-                  
                   var cell = row.getChild(r)
                     .asTableCell();
                   var numpara = cell.getNumChildren();
-                  
                   for (var p = numpara - 1; p >= 0; p--) {
-                    
                     var para = cell.asTableCell()
                       .getChild(p);
                     var celltext = para.editAsText();
@@ -587,27 +399,18 @@ function cleanText() {
                     var paratext = para.asText()
                       .getText();
                     var paralength = paratext.length;
-                    
                     if (prev) {
-                      
                       var prevtext = prev.asText()
                         .getText();
                       var prevlength = prevtext.length;
                       var prevchar = prevtext.charAt(prevlength - 1);
                     }
-                    
                     if (prev && prevlength > 0 && prevchar == " ") {
-                      
-                      var parastyle = para.getAttributes()
-                      .HEADING;
-                      
                       if (CLEAR_multiple == 'true') {
-                        
                         var newprevtext = prev.asText()
                           .replaceText("[ ][ ]+", " ");
                         var newlength = newprevtext.getText()
                           .length;
-                        
                         if (newlength != prevlength) {
                           prev.asText()
                             .deleteText(newlength - 1, newlength - 1);
@@ -620,36 +423,30 @@ function cleanText() {
                           .deleteText(prevlength - 1, prevlength - 1);
                       }
                     }
-                    
                     if (CLEAR_multiple == 'true' && celltext.getText()
                       .length > 0) {
                       celltext.replaceText("[ ][ ]+", " ");
                       var firstChar = celltext.getText()
                         .charAt(0);
-                      
                       if (firstChar == " ") {
                         celltext.deleteText(0, 0);
                       }
                     }
-                    
+                    var parastyle = para.getAttributes()
+                      .HEADING;
                     if (para.getNextSibling()) {
                       var nextparastyle = para.getNextSibling()
                         .getAttributes();
                     }
-                    if (p == 0 && paralength == 0 && nextparastyle !=
-                      "Normal") {
+                    if (p == 0 && paralength == 0 && nextparastyle != "Normal") {
                       para.removeFromParent();
                     }
-                    
                     if (parastyle == "Normal") {
                       if (prev) {
                         var prevparastyle = prev.getAttributes()
                           .HEADING;
                       }
-                      
-                      if (prev && prev.getType() == "PARAGRAPH" &&
-                        prevparastyle == "Normal") {
-                          
+                      if (prev && prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                         if (paralength > 0) {
                           para.getPreviousSibling()
                             .asParagraph()
@@ -694,8 +491,7 @@ function removeLinks() {
           .editAsText();
         // Deal with partially selected text
         if (element.isPartial()) {
-          text.setLinkUrl(element.getStartOffset(), element.getEndOffsetInclusive(),
-            null);
+          text.setLinkUrl(element.getStartOffset(), element.getEndOffsetInclusive(), null);
         }
         // Deal with fully selected text
         else {
@@ -790,8 +586,7 @@ function removeParaBreaks() {
                 var prevparastyle = prev.getAttributes()
                   .HEADING
               }
-              if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle ==
-                "Normal") {
+              if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                 para.getPreviousSibling()
                   .asParagraph()
                   .appendText(" ");
@@ -828,8 +623,7 @@ function removeParaBreaks() {
                 var prevparastyle = prev.getAttributes()
                   .HEADING;
               }
-              if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle ==
-                "Normal") {
+              if (i > 0 && prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                 if (paralength > 0) {
                   para.getPreviousSibling()
                     .asParagraph()
@@ -874,8 +668,7 @@ function removeParaBreaks() {
                 if (prev) {
                   var prevparastyle = prev.getAttributes()
                     .HEADING;
-                  if (prev.getType() == "PARAGRAPH" && prevparastyle ==
-                    "Normal") {
+                  if (prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                     if (paralength > 0) {
                       para.getPreviousSibling()
                         .asParagraph()
@@ -931,8 +724,7 @@ function removeParaBreaks() {
                     if (prev) {
                       var prevparastyle = prev.getAttributes()
                         .HEADING;
-                      if (prev.getType() == "PARAGRAPH" && prevparastyle ==
-                        "Normal") {
+                      if (prev.getType() == "PARAGRAPH" && prevparastyle == "Normal") {
                         if (paralength > 0) {
                           para.getPreviousSibling()
                             .asParagraph()
@@ -985,8 +777,7 @@ function removeMultipleSpaces() {
             for (var i = 0; i < number; i++) {
               var location = oldText.search(/[ ][ ]+/);
               var spaces = oldText.match(/[ ][ ]+/);
-              text.deleteText(start + location, start + location + spaces[0].length -
-                2);
+              text.deleteText(start + location, start + location + spaces[0].length - 2);
               var oldText = oldText.replace(/[ ][ ]+/, ' ');
             }
           }
