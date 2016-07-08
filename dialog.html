@@ -79,6 +79,9 @@
                 <div class="box">
                     <input id="strike" type="checkbox"><span style="text-decoration: line-through">Strikethrough</span>
                 </div>
+                <div class="box">
+                    <input id="indent" type="checkbox"><span>Indentation</span>
+                </div>
             </div>
             <div class="boxes2" id="boxes2">
                 <div>
@@ -159,6 +162,12 @@
             } else {
                 $('#strike').prop('checked', false);
             }
+            
+            if (user_settings.indent == 'true') {
+                $('#indent').prop('checked', true);
+            } else {
+                $('#indent').prop('checked', false);
+            }
 
             if (user_settings.links == 'true') {
                 $('#links').prop('checked', true);
@@ -200,6 +209,7 @@
                 $('#italic').prop('checked'),
                 $('#underline').prop('checked'),
                 $('#strike').prop('checked'),
+                $('#indent').prop('checked'),
                 $('#links').prop('checked'),
                 $('#line_breaks').prop('checked'),
                 $('#paras').prop('checked'),
@@ -216,6 +226,7 @@
                 $('#italic').prop('checked'),
                 $('#underline').prop('checked'),
                 $('#strike').prop('checked'),
+                $('#indent').prop('checked'),
                 $('#links').prop('checked'),
                 $('#line_breaks').prop('checked'),
                 $('#paras').prop('checked'),
