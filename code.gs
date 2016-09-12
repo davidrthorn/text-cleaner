@@ -10,9 +10,10 @@ function onOpen(e) {
       .addItem('Configure', 'showDialog')
       .addSeparator()
       .addItem('Remove links and underlining', 'removeLinks')
-      .addItem('Remove line and paragraph breaks', 'removeBoth')
+      .addItem('Remove line breaks/paragraph breaks', 'removeBoth')
       .addItem('Remove multiple spaces', 'removeMultipleSpaces')
       .addItem('Remove tabs', 'removeTabs')
+      .addItem('Smarten quotes', 'smartenQuotes')
       .addToUi();
   }
   // Open options dialog from add-on menu
@@ -21,7 +22,7 @@ function showDialog() {
     var html = HtmlService.createHtmlOutputFromFile('dialog')
       .setSandboxMode(HtmlService.SandboxMode.IFRAME)
       .setWidth(360)
-      .setHeight(240);
+      .setHeight(255);
     DocumentApp.getUi() // Or DocumentApp or FormApp.
       .showModalDialog(html, 'Configure Text Cleaner');
   }
@@ -47,13 +48,14 @@ function getUserSettings() {
       paras: userProperties.getProperty('CLEAR_paras'),
       multiple: userProperties.getProperty('CLEAR_multiple'),
       tabs: userProperties.getProperty('CLEAR_tabs'),
+      quotes: userProperties.getProperty('CLEAR_quotes'),
       selected: selected
     };
     return user_settings;
   }
   // Update document from the options dialog (first sets new document properties)
 
-function updateDocument(bold, italic, underline, strike, indent, links, line_breaks, paras, multiple, tabs) {
+function updateDocument(bold, italic, underline, strike, indent, links, line_breaks, paras, multiple, tabs, quotes) {
   var userProperties = PropertiesService.getUserProperties();
   userProperties.setProperty('CLEAR_bold', bold);
   userProperties.setProperty('CLEAR_italic', italic);
@@ -65,9 +67,10 @@ function updateDocument(bold, italic, underline, strike, indent, links, line_bre
   userProperties.setProperty('CLEAR_paras', paras);
   userProperties.setProperty('CLEAR_multiple', multiple);
   userProperties.setProperty('CLEAR_tabs', tabs);
+  userProperties.setProperty('CLEAR_quotes', quotes);
 }
 
-function updateClear(bold, italic, underline, strike, indent, links, line_breaks, paras, multiple, tabs) {
+function updateClear(bold, italic, underline, strike, indent, links, line_breaks, paras, multiple, tabs, quotes) {
     var userProperties = PropertiesService.getUserProperties();
     userProperties.setProperty('CLEAR_bold', bold);
     userProperties.setProperty('CLEAR_italic', italic);
@@ -79,6 +82,7 @@ function updateClear(bold, italic, underline, strike, indent, links, line_breaks
     userProperties.setProperty('CLEAR_paras', paras);
     userProperties.setProperty('CLEAR_multiple', multiple);
     userProperties.setProperty('CLEAR_tabs', tabs);
+    userProperties.setProperty('CLEAR_quotes', quotes);
     cleanText();
   }
   // Update document from the add-on menu
@@ -95,6 +99,7 @@ function cleanText() {
   var CLEAR_paras = userProperties.getProperty('CLEAR_paras');
   var CLEAR_multiple = userProperties.getProperty('CLEAR_multiple');
   var CLEAR_tabs = userProperties.getProperty('CLEAR_tabs');
+  var CLEAR_quotes = userProperties.getProperty('CLEAR_quotes');
   var selection = DocumentApp.getActiveDocument()
     .getSelection();
   if (selection) {
@@ -469,6 +474,9 @@ function cleanText() {
     if (CLEAR_multiple == 'true') {
       removeMultipleSpaces();
     }
+    if (CLEAR_quotes == 'true') {
+      smartenQuotes();
+    }
   }
   // No text selected
   else {
@@ -837,6 +845,81 @@ function removeTabs() {
         .alert('No text selected. Please select some text and try again.');
     }
   }
+
+
+function smartenQuotes() {
+    var selection = DocumentApp.getActiveDocument()
+      .getSelection();
+    if (selection) {
+      var elements = selection.getRangeElements();
+      for (var i = 0; i < elements.length; i++) {
+        var element = elements[i];
+        // Only deal with text elements
+        if (element.getElement()
+          .editAsText) {
+          var text = element.getElement()
+            .editAsText();
+          if (element.isPartial()) {
+            var start = element.getStartOffset();
+            var finish = element.getEndOffsetInclusive();
+            var oldText = text.getText()
+              .slice(start, finish);
+
+            if (oldText.match(/'/g)) {
+              var number = oldText.match(/'/g)
+                .length;
+              for (var i = 0; i < number; i++) {
+                var location = oldText.search(/'/);
+                text.deleteText(start + location, start + location);
+                var char = text.getText().charAt(start + location -1);
+                var charchar = text.getText().charAt(start + location -2);
+                if (char == ' ' || char == '"' && charchar == ' ') {
+                  text.insertText(start + location, '‘');
+                  var oldText = oldText.replace(/'/, '‘')
+                  } else {
+                  text.insertText(start + location, '’');
+                  var oldText = oldText.replace(/'/, '’')
+                  }
+              }
+            }
+            
+            if (oldText.match(/"/g)) {
+              var number = oldText.match(/"/g)
+                .length;
+              for (var i = 0; i < number; i++) {
+                var location = oldText.search(/"/);
+                text.deleteText(start + location, start + location);
+                var char = text.getText().charAt(start + location -1);
+                if (char == ' ' || char == "‘") {
+                  text.insertText(start + location, '“');
+                  var oldText = oldText.replace(/"/, '“')
+                  } else {
+                  text.insertText(start + location, '”');
+                  var oldText = oldText.replace(/"/, '”')
+                  }
+              }
+            }
+          }
+          
+          // Deal with fully selected text
+          else {
+            text.replaceText(" '", " ‘");
+            text.replaceText(' "',' “');
+            text.replaceText("“'", "“‘");
+            text.replaceText('‘"','‘“');
+            text.replaceText('"','”');
+            text.replaceText("'",'’');
+          }
+        }
+      }
+    }
+    // No text selected
+    else {
+      DocumentApp.getUi()
+        .alert('No text selected. Please select some text and try again.');
+    }
+  }
+
   //----------------------------------------//
   // For testing purposes only
 
