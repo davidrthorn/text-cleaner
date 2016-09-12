@@ -9,17 +9,17 @@
     <style>
         .bottom-button-update {
             position: absolute;
-            top: 210px;
+            top: 225px;
             right: 288px;
         }
         .bottom-button-save-clear {
             position: absolute;
-            top: 210px;
+            top: 225px;
             right: 150px;
         }
         .bottom-button-close {
             position: absolute;
-            top: 210px;
+            top: 225px;
             right: 0px;
         }
         .boxes1 {
@@ -81,6 +81,9 @@
                 </div>
                 <div class="box">
                     <input id="indent" type="checkbox"><span>Indentation</span>
+                </div>
+                <div class="box">
+                    <input id="quotes" type="checkbox"><span>Smarten quotes</span>
                 </div>
             </div>
             <div class="boxes2" id="boxes2">
@@ -199,6 +202,12 @@
             } else {
                 $('#tabs').prop('checked', false);
             }
+            
+            if (user_settings.tabs == 'quotes') {
+                $('#quotes').prop('checked', true);
+            } else {
+                $('#quotes').prop('checked', false);
+            }
             $('#spinner').hide();
             $('#allbox').show();
         }
@@ -214,7 +223,8 @@
                 $('#line_breaks').prop('checked'),
                 $('#paras').prop('checked'),
                 $('#multiple').prop('checked'),
-                $('#tabs').prop('checked')
+                $('#tabs').prop('checked'),
+                $('#quotes').prop('checked')
             );
 
             google.script.host.close()
@@ -231,7 +241,8 @@
                 $('#line_breaks').prop('checked'),
                 $('#paras').prop('checked'),
                 $('#multiple').prop('checked'),
-                $('#tabs').prop('checked')
+                $('#tabs').prop('checked'),
+                $('#quotes').prop('checked')
             );
 
             google.script.host.close()
