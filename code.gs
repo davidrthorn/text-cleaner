@@ -873,7 +873,7 @@ function smartenQuotes() {
                 text.deleteText(start + location, start + location);
                 var char = text.getText().charAt(start + location -1);
                 var charchar = text.getText().charAt(start + location -2);
-                if (char == ' ' || char == '"' && charchar == ' ') {
+                if (!char || char == ' ' || char == '"' && charchar == ' ') {
                   text.insertText(start + location, '‘');
                   var oldText = oldText.replace(/'/, '‘')
                   } else {
@@ -890,7 +890,8 @@ function smartenQuotes() {
                 var location = oldText.search(/"/);
                 text.deleteText(start + location, start + location);
                 var char = text.getText().charAt(start + location -1);
-                if (char == ' ' || char == "‘") {
+                Logger.log(location);
+                if (!char || char == ' ' || char == "‘") {
                   text.insertText(start + location, '“');
                   var oldText = oldText.replace(/"/, '“')
                   } else {
@@ -903,6 +904,17 @@ function smartenQuotes() {
           
           // Deal with fully selected text
           else {
+            
+            if (text.getText().charAt(0) == '"') {
+                text.deleteText(0,0);
+                text.insertText(0, '“')
+            }
+            
+            if (text.getText().charAt(0) == "'") {
+                text.deleteText(0,0);
+                text.insertText(0, "‘")
+            }
+            
             text.replaceText(" '", " ‘");
             text.replaceText(' "',' “');
             text.replaceText("“'", "“‘");
@@ -922,6 +934,118 @@ function smartenQuotes() {
 
   //----------------------------------------//
   // For testing purposes only
+
+function lines() {
+    var body = DocumentApp.getActiveDocument().getBody();
+  
+      var children = body.getNumChildren();
+      for (var i = 0; i < children; i++) {
+        var para = body.getChild(i);
+        
+        if (para.editAsText) {
+          var text = para.editAsText();
+          if (text.getText().search(/\r\r/g) > 0) { // Deals with double line break as paragraph break
+            var loc = text.getText().search(/\r\r/g);
+            var copied = text.copy();
+            var length = text.getText().length;
+            
+            text.deleteText(loc,length-1);
+            
+            var trimmed = copied.deleteText(0,loc+1);
+            var bod = trimmed.asParagraph();
+          
+            DocumentApp.getActiveDocument().getBody().insertParagraph(i+1, bod);
+          } else if (text.getText().search(/\r/g) > 0) { // Deals with single line break as paragraph break
+            var loc = text.getText().search(/\r/g);
+            var copied = text.copy();
+            var length = text.getText().length;
+            
+            text.deleteText(loc,length-1);
+            
+            var trimmed = copied.deleteText(0,loc);
+            var bod = trimmed.asParagraph();
+          
+            DocumentApp.getActiveDocument().getBody().insertParagraph(i+1, bod);
+            
+          }
+        }
+      }
+
+  }
+
+function replaceNonBreaks() {
+    var selection = DocumentApp.getActiveDocument()
+      .getSelection();
+    if (selection) {
+      var elements = selection.getRangeElements();
+      for (var i = 0; i < elements.length; i++) {
+        var element = elements[i];
+        // Only deal with text elements
+        if (element.getElement()
+          .editAsText) {
+          var text = element.getElement()
+            .editAsText();
+          if (element.isPartial()) {
+            var start = element.getStartOffset();
+            var finish = element.getEndOffsetInclusive();
+            var oldText = text.getText()
+              .slice(start, finish);
+            if (oldText.match(/\u00A0/g)) {
+              var number = oldText.match(/\u00A0/g)
+                .length;
+              for (var i = 0; i < number; i++) {
+                var location = oldText.search(/\u00A0/g);
+                text.deleteText(start + location, start + location);
+                text.insertText(start + location, ' ');
+                var oldText = oldText.replace(/\u00A0/g, ' ');
+              }
+            }
+          }
+          // Deal with fully selected text
+          else {
+            var oldText = text.getText();
+            if (oldText.match(/\u00A0/g)) {
+              var number = oldText.match(/\u00A0/g)
+                .length;
+              for (var i = 0; i < number; i++) {
+                var location = oldText.search(/\u00A0/g);
+                text.deleteText(location, location);
+                text.insertText(location, ' ');
+                var oldText = oldText.replace(/\u00A0/g, ' ');
+              }
+            }
+          }
+        }
+      }
+    }
+    // No text selected
+    else {
+      DocumentApp.getUi()
+        .alert('No text selected. Please select some text and try again.');
+    }
+  }
+
+function replaceNonBreaksAAA() {
+  var body = DocumentApp.getActiveDocument().getBody();
+  var children = body.getNumChildren();
+  for (var i = 0; i < children; i++) {
+    var para = body.getChild(i);
+    if (para.editAsText) {
+      var text = para.editAsText();
+      var thetext = text.getText();
+      if (thetext.match(/\u00A0/g)) {
+        var number = thetext.match(/\u00A0/g).length;
+        for (var i = 0; i < number; i++) {
+          var location = thetext.search(/\u00A0/);
+          text.deleteText(location, location);
+          text.insertText(location, " ");
+        }
+      }
+    }
+  }
+}
+
+
 
 function clearProps() {
   var userProperties = PropertiesService.getUserProperties();
