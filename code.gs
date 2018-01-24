@@ -110,7 +110,7 @@ function getOrSetProps(get_or_set, dialog_settings) {
         ];
 
     if (get_or_set === 'get') return getProperties(setting_names, the_properties);
-    if (get_or_set === 'set') setProperties(setting_names, user_properties);
+    if (get_or_set === 'set') setProperties(setting_names, user_properties, dialog_settings);
 }
 
 
@@ -127,7 +127,7 @@ function getProperties(setting_names, the_properties) {
 }
 
 
-function setProperties() {
+function setProperties(setting_names, user_properties, dialog_settings) {
     for (var i in setting_names) {
         var name = setting_names[i];
         user_properties.setProperty('TXTCLN_' + name, dialog_settings[i]);
@@ -372,7 +372,7 @@ function removeMultipleSpaces(the_element, paragraph_iteration, start_offset, en
 }
 
 
-function smartenQuotes(the_element, paragraph_iteration, start_offset, end_offset) {
+function smartenQuotes(the_element, paragraph_iteration, start_offset) {
 
   // Smartening quotes in partial text is a nightmare, so isn't done
   // User is told in settings dialog that this only works with full paragraphs
@@ -380,15 +380,15 @@ function smartenQuotes(the_element, paragraph_iteration, start_offset, end_offse
 
   var first_char = the_element.getText().charAt(0);
 
-  if (first_char === `"`) the_element.deleteText(0, 0).insertText(0, `“`);
-  if (first_char === `'`) the_element.deleteText(0, 0).insertText(0, `’`);
-
-  the_element.replaceText(` '`, ` ‘`)
-      .replaceText(` "`, ` “`)
-      .replaceText(`“'`, `“‘`)
-      .replaceText(`‘"`, `‘“`)
-      .replaceText(`"`, `”`)
-      .replaceText(`'`, `’`);
+  if (first_char === '"') the_element.editAsText().deleteText(0, 0).insertText(0, '“');
+  if (first_char === "'") the_element.editAsText().deleteText(0, 0).insertText(0, "’");
+  
+  the_element.replaceText(" '", " ‘")
+      .replaceText(' "', " “")
+      .replaceText("“'", "“‘")
+      .replaceText('‘"', '‘“')
+      .replaceText('"', '”')
+      .replaceText("'", '’');
 }
 
 
@@ -401,17 +401,18 @@ function clearFormatting(the_element, style, start_offset, end_offset) {
             : style[DocumentApp.Attribute.INDENT_FIRST_LINE];
 
         the_element.setAttributes(style)
-                   .setIndentFirstLine(indent);
+            .setIndentFirstLine(indent);
     } else {
         the_element.setAttributes(start_offset, end_offset, style);
     }
 }
 
 
-function replaceDoubleParagraphBreaks(the_element, paragraph_iteration) {
-  if (paragraph_iteration != 0 && the_element.getText().length > 0) {
-      the_element.getPreviousSibling().appendText(' ');
-      var new_paragraph = the_element.merge();
+function replaceDoubleParagraphBreaks(the_element, paragraph_iteration, start_offset) {
+  var paragraph = (start_offset == null) ? the_element : the_element.getParent();
+  if (paragraph_iteration != 0 && paragraph.getText().length > 0) {
+      paragraph.getPreviousSibling().appendText(' ');
+      var new_paragraph = paragraph.merge();
       if (new_paragraph.getText().charAt(0) == ' ') new_paragraph.editAsText().deleteText(0,0);
   }
 }
