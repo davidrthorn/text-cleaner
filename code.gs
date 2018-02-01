@@ -1,3 +1,6 @@
+
+var test = {'keytest': 'valtest'};
+
 /*
  * 1. Menus and dialog
  * 2. User properties and settings
@@ -25,7 +28,7 @@ function onOpen(e) {
     .addSeparator()
     .addItem('Remove line breaks','menuLineBreaks')
     .addItem('Remove paragraph breaks', 'menuParagraphBreaks')
-    .addItem('Replace double paragraph breaks', 'menuDoubleParagraphBreaks')
+    .addItem('Fix hard line breaks in plain text', 'menuDoubleParagraphBreaks')
     .addSeparator()
     .addItem('Remove multiple spaces', 'menuMultipleSpaces')
     .addItem('Remove tabs', 'menuTabs')
@@ -151,8 +154,8 @@ function updateAndClean(dialog_settings) {
 
 function cleanText() {
   var user_properties = PropertiesService.getUserProperties().getProperties();
-  var style = {},
-    to_execute = [];
+  var style = {};
+  var to_execute = [];
 
   // List of all the style attributes that are cleared as standard
   var std_clear = [
@@ -207,7 +210,7 @@ function iterateParagraphs(to_execute, style) {
   var selection = DocumentApp.getActiveDocument().getSelection();
   if (!selection) {
     DocumentApp.getUi().alert('No text selected.' +
-                  '\nPlease select some text and try again');
+      '\nPlease select some text and try again');
     return
   }
 
@@ -233,7 +236,7 @@ function iterateParagraphs(to_execute, style) {
     }
 
     // Fully selected text (i.e. whole paragraphs)
-    if (element_type != 'TABLE' && element_type != 'TABLE_CELL') {
+    if (element_type == 'PARAGRAPH') {
       if (style) clearFormatting(the_element, style, start_offset);
       for (var process in to_execute)
         this[to_execute[process]](the_element, i, start_offset);
@@ -244,7 +247,7 @@ function iterateParagraphs(to_execute, style) {
     // This function is never used again, so declared here
     function cleanTableCell(cell, style) {
       // Bury into the table cell to retrieve paragraphs
-      for (var i = cell.getNumChildren() - 1; i >= 0; i--) {
+      for (var i = 0; i < cell.getNumChildren(); i++) {
         var the_element = cell.getChild(i);
         if (style) clearFormatting(the_element, style);
         for (var process in to_execute) {
@@ -294,7 +297,7 @@ function removeTabs(the_element, paragraph_iteration, start_offset, end_offset) 
     return
   }
 
-  replaceCharInPartial(the_element, '\t', start_offset, end_offset);
+  partialRep( the_element, start_offset, end_offset, /\t+/g, ' ' )
 
   // Get rid of multiple spaces arising from multiple sequential
   // tabs being replaced by spaces.
@@ -305,31 +308,11 @@ function removeTabs(the_element, paragraph_iteration, start_offset, end_offset) 
 function removeLineBreaks(the_element, paragraph_iteration, start_offset, end_offset) {
   if (start_offset == null) {
     the_element.replaceText('\\v+', ' ');
-    removeMultipleSpaces(the_element, paragraph_iteration, start_offset, end_offset);
-    return
+  } else {
+    partialRep( the_element, start_offset, end_offset, /\r+/g, ' ' );
   }
-
-  replaceCharInPartial(the_element, '\r', start_offset, end_offset);
+  
   removeMultipleSpaces(the_element, paragraph_iteration, start_offset, end_offset);
-}
-
-// Manual replace characters in partial text -- used by removeLineBreaks and removeTabs
-function replaceCharInPartial(the_element, char, start_offset, end_offset) {
-  var current_text = the_element.getText().slice(start_offset, end_offset),
-    reg = new RegExp(char),
-    reg_global = new RegExp(char, 'g');
-
-  if (!current_text.match(reg_global)) return;
-
-  var match_count = current_text.match(reg_global).length;
-  for (var i = 0; i < match_count; i++) {
-    var break_location = current_text.search(reg);
-    the_element.deleteText(start_offset + break_location, start_offset + break_location)
-      .insertText(start_offset + break_location, ' ');
-
-    // Update the current_text object having deleted a character
-    current_text = current_text.replace(reg, ' ');
-  }
 }
 
 
@@ -361,19 +344,7 @@ function removeMultipleSpaces(the_element, paragraph_iteration, start_offset, en
     return
   }
 
-  var current_text = the_element.getText().slice(start_offset, end_offset);
-  if (!current_text.match(/[  ][  ]+/g)) return;
-
-  var match_count = current_text.match(/[  ][  ]+/g).length;
-  for (var i = 0; i < match_count; i++) {
-    var spaces_location = current_text.search(/[  ][  ]+/),
-      the_spaces = current_text.match(/[  ][  ]+/);
-
-    the_element.deleteText(start_offset + spaces_location,
-      start_offset + spaces_location + the_spaces[0].length - 2);
-
-    current_text = current_text.replace(/[  ][  ]+/, ' ');
-  }
+  partialRep( the_element, start_offset, end_offset, /[ ]{2,}/g, ' ' );
 }
 
 
@@ -415,12 +386,13 @@ function clearFormatting(the_element, style, start_offset, end_offset) {
 }
 
 
-function replaceDoubleParagraphBreaks(the_element, paragraph_iteration, start_offset) {
-  var paragraph = (start_offset == null) ? the_element : the_element.getParent();
-  if (paragraph_iteration != 0 && paragraph.getText().length > 0) {
-    paragraph.getPreviousSibling().appendText(' ');
-    var new_paragraph = paragraph.merge();
-    if (new_paragraph.getText().charAt(0) == ' ') new_paragraph.editAsText().deleteText(0,0);
+function replaceDoubleParagraphBreaks(the_element, para_iteration, start_offset) {
+  var para = (start_offset == null) ? the_element : the_element.getParent();
+  
+  if (para_iteration != 0 && para.getText().length > 0) {
+    para.getPreviousSibling().appendText(' ');
+    var new_para = para.merge();
+    if (new_para.getText().charAt(0) == ' ') new_para.editAsText().deleteText(0,0);
   }
 }
 
