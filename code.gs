@@ -194,7 +194,7 @@ function cleanText() {
 
   // 'Smarten quotes' is an exception
   var smarten = user_properties['TXTCLN_quotes'];
-  if (smarten === 'checked') to_execute.push(smartenQuotes);
+  if (smarten === 'checked') to_execute.push('smartenQuotes');
 
   iterateParagraphs(to_execute, style);
 }
